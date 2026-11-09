@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 원UI식 둥근 체크: 선택되면 키컬러 원 + 체크, 아니면 회색 테두리 원 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="@color/key"
+                android:pathData="M12,2a10,10 0 1,0 0,20a10,10 0 1,0 0,-20z" />
+            <path
+                android:pathData="M7.5,12.5 L10.5,15.5 L16.5,9"
+                android:strokeWidth="2.2"
+                android:strokeColor="@color/on_key"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+        </vector>
+    </item>
+    <item>
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:pathData="M12,3a9,9 0 1,0 0,18a9,9 0 1,0 0,-18z"
+                android:strokeWidth="1.8"
+                android:strokeColor="@color/text_secondary" />
+        </vector>
+    </item>
+</selector>

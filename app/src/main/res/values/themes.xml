@@ -72,6 +72,37 @@
         <item name="android:textSize">15sp</item>
     </style>
 
+    <!-- 화면 하단에 떠 있는 알약 버튼(예약 등록 / 삭제). 아이콘+글자를 가운데 묶고,
+         최소 너비를 같게 해서 두 버튼 너비를 맞춘다. 바탕·아이콘·글자는 각 버튼에서 -->
+    <style name="FloatingPill">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_gravity">bottom|center_horizontal</item>
+        <item name="android:layout_marginBottom">24dp</item>
+        <item name="android:minWidth">144dp</item>
+        <item name="android:paddingHorizontal">24dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center</item>
+        <item name="android:elevation">6dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="FloatingPillText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:textColor">@color/on_key</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 목록 선택(삭제) 모드의 둥근 체크 -->
+    <style name="RoundCheck">
+        <item name="android:button">@drawable/btn_round_check</item>
+        <item name="android:background">@null</item>
+    </style>
+
     <style name="Picker.AmPm">
         <item name="android:editTextStyle">@style/PickerText.AmPm</item>
     </style>

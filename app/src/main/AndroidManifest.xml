@@ -2,8 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Android 12+ 기기에서만 의미 있음. 노트9(Android 10 이하)에서는 무시된다 -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 정확한 시각 알람. 노트9(Android 10 이하)는 권한 없이 된다.
+         Android 12: SCHEDULE_EXACT_ALARM(기본 허용, 사용자가 끌 수 있음 → 앱에서 안내)
+         Android 13+: USE_EXACT_ALARM(설치 때 자동 허용). Play 스토어에 올리면 알람 앱 정책 검토 대상 -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- 첫 실행 때 "배터리 최적화에서 제외" 시스템 창을 띄우는 데 필요 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:icon="@mipmap/ic_launcher"

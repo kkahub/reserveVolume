@@ -3,6 +3,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:clipToPadding="false"
     android:defaultFocusHighlightEnabled="false"
     android:focusable="true"
     android:focusableInTouchMode="true"
@@ -63,14 +64,15 @@
         <CheckBox style="@style/DayToggle" android:text="토" />
     </LinearLayout>
 
-    <!-- 예약 시각에 맞출 음악 볼륨 0~100%. 0%는 음소거 -->
+    <!-- 예약 시각에 맞출 음악 볼륨 0~100%. 0%는 음소거.
+         좌우 6dp는 요일 원·바텀 버튼 끝선에 맞춘 값 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp">
+        android:paddingHorizontal="6dp">
 
         <TextView
             android:layout_width="0dp"
@@ -89,11 +91,24 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- 트랙 양끝을 6dp 선에 맞추고, 끝에 간 손잡이(반지름 10dp, 12dp까지 여유)가 잘리지 않게
+         여백 12dp를 두고 그만큼 바깥으로 뺀다(-6dp). 바깥은 부모 clipToPadding=false로 그려진다.
+         SeekBar 기본 스타일의 paddingStart/End(16dp)가 paddingHorizontal을 덮어쓰고,
+         layout_marginHorizontal은 음수를 무시해서 둘 다 Start/End로 지정 -->
     <SeekBar
         android:id="@+id/volume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="-6dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="-6dp"
         android:contentDescription="음악 볼륨"
-        android:max="100" />
+        android:max="100"
+        android:maxHeight="8dp"
+        android:minHeight="8dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:progressDrawable="@drawable/seekbar_track"
+        android:splitTrack="false"
+        android:thumb="@drawable/seekbar_thumb" />
 </LinearLayout>

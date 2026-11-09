@@ -4,6 +4,7 @@
     <color name="bg">#1C1D20</color>
     <color name="surface">#2A2C30</color>
     <color name="surface_high">#3A3C41</color>
+    <color name="light_gray">#D3D5D9</color>
     <color name="text_primary">#E8E9EB</color>
     <color name="text_secondary">#8E9298</color>
     <!-- 키컬러: 핵심 요소(등록 버튼, 켜진 스위치, 앱 아이콘)에만 사용 -->

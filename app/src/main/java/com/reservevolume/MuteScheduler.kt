@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
@@ -29,32 +30,41 @@ object MuteScheduler {
     /** 볼륨 %를 기기 볼륨 단계로 반올림. 최대 15단계면 60% → 9 */
     fun volumeLevel(max: Int, percent: Int) = (max * percent + 50) / 100
 
+    /** 예약을 지우고 걸려 있던 알람도 취소한다. */
+    fun delete(c: Context, key: String) {
+        prefs(c).edit().remove(key).apply()
+        repeatPrefs(c).edit().remove(key).apply()
+        volumePrefs(c).edit().remove(key).apply()
+        c.getSystemService(AlarmManager::class.java).cancel(pending(c, key))
+    }
+
     /** 예약을 등록하거나 old를 고친다. 등록·수정하면 바로 켠다. */
     fun save(c: Context, old: String?, key: String, days: Int, volume: Int) {
-        if (old != null) {
-            prefs(c).edit().remove(old).apply()
-            repeatPrefs(c).edit().remove(old).apply()
-            volumePrefs(c).edit().remove(old).apply()
-            c.getSystemService(AlarmManager::class.java).cancel(pending(c, old))
-        }
+        if (old != null) delete(c, old)
         prefs(c).edit().putBoolean(key, true).apply()
         repeatPrefs(c).edit().putInt(key, days).apply()
         volumePrefs(c).edit().putInt(key, volume).apply()
         apply(c)
     }
 
+    /** 정확한 시각 알람을 걸 수 있는지. Android 12에서 사용자가 "알람 및 리마인더" 권한을 끄면 false */
+    fun canExact(c: Context) =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || c.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+
     /** 예약마다 다음 알람을 걸거나(켜짐) 취소한다(꺼짐). */
     fun apply(c: Context) {
         val am = c.getSystemService(AlarmManager::class.java)
+        val exact = canExact(c)
         val now = ZonedDateTime.now()
         for ((key, on) in prefs(c).all) {
             if (on != true) {
                 am.cancel(pending(c, key))
                 continue
             }
-            val at = nextTrigger(now, LocalTime.parse(key), daysOf(c, key))
-            // shortcut: Android 13+ 기기에선 정확한 알람 권한 미허용 시 예외, 노트9 외 기기에 쓸 때 canScheduleExactAlarms() 체크 추가
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at.toInstant().toEpochMilli(), pending(c, key))
+            val at = nextTrigger(now, LocalTime.parse(key), daysOf(c, key)).toInstant().toEpochMilli()
+            // 권한이 없으면 정확한 알람은 예외로 앱이 죽는다. 몇 분 늦을 수 있는 알람으로라도 건다
+            if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending(c, key))
+            else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending(c, key))
         }
     }
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 연회색 버튼 바탕. 비활성(선택 없음)은 반투명 대신 어두운 회색이라 뒤 목록이 비치지 않는다 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#5C5F65" android:state_enabled="false" />
+    <item android:color="@color/light_gray" />
+</selector>

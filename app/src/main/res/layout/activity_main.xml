@@ -9,16 +9,64 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView
+        <!-- 헤더. 선택(삭제) 모드에선 제목 자리에 [전체 … 삭제] 바가 겹쳐 나온다 -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="28dp"
-            android:paddingBottom="20dp"
-            android:text="볼륨예약"
-            android:textColor="@color/text_primary"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="28dp"
+                android:paddingBottom="20dp"
+                android:text="볼륨예약"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <!-- 좌우 44dp = 목록 여백 20 + 카드 안쪽 24: 전체 체크는 카드 체크와, 삭제는 스위치 끝과 맞춘다 -->
+            <LinearLayout
+                android:id="@+id/selection_bar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="44dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="32dp"
+                android:visibility="gone">
+
+                <CheckBox
+                    android:id="@+id/select_all"
+                    style="@style/RoundCheck"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="8dp"
+                    android:text="전체"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <!-- 선택 모드를 닫고 목록으로 돌아간다(뒤로가기와 같음) -->
+                <TextView
+                    android:id="@+id/cancel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
+                    android:text="취소"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </FrameLayout>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -54,21 +102,37 @@
         </FrameLayout>
     </LinearLayout>
 
-    <Button
+    <!-- 하단 플로팅 버튼: 일반 모드는 예약 등록, 선택 모드는 삭제 -->
+    <LinearLayout
         android:id="@+id/add"
-        android:layout_width="wrap_content"
-        android:layout_height="56dp"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="24dp"
-        android:background="@drawable/bg_key_button"
-        android:drawableStart="@drawable/ic_plus"
-        android:drawablePadding="6dp"
-        android:elevation="6dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="32dp"
-        android:stateListAnimator="@null"
-        android:text="예약 등록"
-        android:textColor="@color/on_key"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        style="@style/FloatingPill"
+        android:background="@drawable/bg_key_button">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_plus" />
+
+        <TextView
+            style="@style/FloatingPillText"
+            android:text="예약 등록" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/delete"
+        style="@style/FloatingPill"
+        android:background="@drawable/bg_light_button"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_delete" />
+
+        <TextView
+            style="@style/FloatingPillText"
+            android:text="삭제" />
+    </LinearLayout>
 </FrameLayout>
