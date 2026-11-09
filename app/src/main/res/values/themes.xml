@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorAccent">@color/key</item>
+        <item name="android:colorPrimary">@color/bg</item>
+        <item name="android:colorPrimaryDark">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:alertDialogTheme">@style/DialogTheme</item>
+    </style>
+
+    <!-- 팝업도 회색 바탕(둥근 모서리), 확인 버튼만 키컬러 -->
+    <style name="DialogTheme" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/key</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+        <item name="android:buttonBarStyle">@style/DialogButtonBar</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/PillButton.Key</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/PillButton.Gray</item>
+    </style>
+
+    <!-- 예약 등록 버튼과 같은 알약 모양, 팝업 안이라 높이만 낮게 -->
+    <style name="PillButton" parent="android:Widget.Material.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingHorizontal">28dp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:layout_marginStart">8dp</item>
+    </style>
+
+    <!-- 기본 버튼 줄 여백이 좁아 둥근 모서리에 붙지 않게 띄운다 -->
+    <style name="DialogButtonBar" parent="android:Widget.Material.ButtonBar.AlertDialog">
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">20dp</item>
+        <item name="android:paddingEnd">12dp</item>
+    </style>
+
+    <style name="PillButton.Key">
+        <item name="android:background">@drawable/bg_key_button</item>
+        <item name="android:textColor">@color/on_key</item>
+    </style>
+
+    <style name="PillButton.Gray">
+        <item name="android:background">@drawable/bg_gray_button</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 시간 휠. NumberPicker는 안쪽 EditText의 글자 모양으로 휠 전체를 그려서 editTextStyle로 키운다 -->
+    <style name="Picker">
+        <item name="android:editTextStyle">@style/PickerText</item>
+        <!-- 원UI처럼 선택 구분선 없이 -->
+        <item name="android:colorControlNormal">@android:color/transparent</item>
+    </style>
+
+    <style name="PickerText" parent="android:Widget.Material.EditText">
+        <item name="android:textSize">44sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 반복 요일 토글: 7칸 균등, 선택하면 키컬러 원 -->
+    <style name="DayToggle">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:button">@null</item>
+        <item name="android:background">@drawable/bg_day</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/day_text</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="Picker.AmPm">
+        <item name="android:editTextStyle">@style/PickerText.AmPm</item>
+    </style>
+
+    <style name="PickerText.AmPm">
+        <item name="android:textSize">26sp</item>
+    </style>
+</resources>

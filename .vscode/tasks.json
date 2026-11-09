@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "폰에 설치",
+      "type": "shell",
+      "command": ".\\gradlew.bat installDebug",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "에뮬레이터 실행 (노트9 대용)",
+      "type": "shell",
+      "command": "& \"$env:LOCALAPPDATA\\Android\\Sdk\\emulator\\emulator.exe\" -avd Note9_API29",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "단위 테스트",
+      "type": "shell",
+      "command": ".\\gradlew.bat testDebugUnitTest",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

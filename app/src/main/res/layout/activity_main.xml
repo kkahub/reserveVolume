@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 헤더 + 스크롤 컨테이너, 그 위에 예약 등록 버튼이 떠 있다 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="28dp"
+            android:paddingBottom="20dp"
+            android:text="볼륨예약"
+            android:textColor="@color/text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- 컨테이너가 화면 폭 전체라 스크롤바가 카드가 아닌 화면 끝에 생긴다 -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingHorizontal="20dp"
+                android:scrollbarStyle="outsideOverlay">
+
+                <!-- 예약 항목(item_reservation)이 시간순으로 들어간다.
+                     아래 여백은 마지막 항목이 떠 있는 버튼에 가리지 않게. ScrollView 패딩에 두면
+                     카드 위에서 시작한 스와이프를 ScrollView가 가로채지 않아 여기 둔다 -->
+                <LinearLayout
+                    android:id="@+id/list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingBottom="104dp" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="예약된 볼륨조절이 없어요"
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/add"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_key_button"
+        android:drawableStart="@drawable/ic_plus"
+        android:drawablePadding="6dp"
+        android:elevation="6dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="32dp"
+        android:stateListAnimator="@null"
+        android:text="예약 등록"
+        android:textColor="@color/on_key"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+</FrameLayout>

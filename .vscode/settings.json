@@ -1,0 +1,7 @@
+{
+  // 이 프로젝트 터미널에서만 Android Studio 내장 JDK와 adb를 쓰도록
+  "terminal.integrated.env.windows": {
+    "JAVA_HOME": "C:\\Program Files\\Android\\Android Studio\\jbr",
+    "PATH": "${env:LOCALAPPDATA}\\Android\\Sdk\\platform-tools;${env:PATH}"
+  }
+}
