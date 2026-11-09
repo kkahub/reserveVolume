@@ -273,7 +273,7 @@ class MainActivity : Activity() {
             setOnEditorActionListener { _, _, _ -> minuteInput.requestFocus() }
         }
 
-        val t = old?.let(LocalTime::parse) ?: LocalTime.of(22, 0)
+        val t = old?.let(LocalTime::parse) ?: LocalTime.now() // 새 예약은 휴대폰 현재 시각으로 시작
         ampm.value = t.hour / 12
         hour.value = to12h(t.hour)
         minute.value = t.minute
