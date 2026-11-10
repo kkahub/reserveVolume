@@ -11,9 +11,8 @@ class MuteReceiver : BroadcastReceiver() {
         if (intent.action == MuteScheduler.ACTION_MUTE) {
             val key = intent.getStringExtra(MuteScheduler.EXTRA_KEY)
             val percent = key?.let { MuteScheduler.volumeOf(c, it) } ?: 0
-            val audio = c.getSystemService(AudioManager::class.java)
-            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            audio.setStreamVolume(AudioManager.STREAM_MUSIC, MuteScheduler.volumeLevel(max, percent), 0)
+            val level = MuteScheduler.volumeLevel(MuteScheduler.maxLevel(c), percent)
+            c.getSystemService(AudioManager::class.java).setStreamVolume(AudioManager.STREAM_MUSIC, level, 0)
             // 요일을 안 고른(한 번만) 예약은 울린 뒤 끈다
             if (key != null && MuteScheduler.daysOf(c, key) == 0) {
                 MuteScheduler.prefs(c).edit().putBoolean(key, false).apply()

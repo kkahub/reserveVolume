@@ -35,6 +35,15 @@ class MuteSchedulerTest {
         assertEquals(15, MuteScheduler.volumeLevel(15, 100))
     }
 
+    @Test fun levelPercentRoundTrips() {
+        assertEquals(7, MuteScheduler.levelPercent(15, 1))
+        assertEquals(47, MuteScheduler.levelPercent(15, 7))
+        assertEquals(100, MuteScheduler.levelPercent(15, 15))
+        // 보이는 %로 저장해도 같은 단계로 돌아와야 한다
+        for (max in listOf(7, 15, 25, 30)) for (level in 0..max)
+            assertEquals(level, MuteScheduler.volumeLevel(max, MuteScheduler.levelPercent(max, level)))
+    }
+
     @Test fun onceIgnoresWeekday() =
         assertEquals(at(22, 0, day = 10), MuteScheduler.nextTrigger(at(23, 0, day = 9), LocalTime.of(22, 0), 0))
 }

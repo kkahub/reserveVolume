@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Build
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -29,6 +30,12 @@ object MuteScheduler {
 
     /** 볼륨 %를 기기 볼륨 단계로 반올림. 최대 15단계면 60% → 9 */
     fun volumeLevel(max: Int, percent: Int) = (max * percent + 50) / 100
+
+    /** 볼륨 단계를 %로(volumeLevel의 반대). 최대 15단계면 7 → 47 */
+    fun levelPercent(max: Int, level: Int) = (level * 100 + max / 2) / max
+
+    /** 기기의 음악 볼륨 최대 단계. 갤럭시는 보통 15 */
+    fun maxLevel(c: Context) = c.getSystemService(AudioManager::class.java).getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
     /** 예약을 지우고 걸려 있던 알람도 취소한다. */
     fun delete(c: Context, key: String) {

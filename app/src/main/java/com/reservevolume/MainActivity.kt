@@ -103,6 +103,7 @@ private fun timeLabel(t: LocalTime) = "${t.format(AMPM)} ${t.format(CLOCK)}"
 
 class MainActivity : Activity() {
     private val prefs by lazy { MuteScheduler.prefs(this) }
+    private val maxLevel by lazy { MuteScheduler.maxLevel(this) }
 
     /** 선택(삭제) 모드에서 고른 예약들. null이면 일반 모드 */
     private var selection: MutableSet<String>? = null
@@ -220,7 +221,9 @@ class MainActivity : Activity() {
             val onceDate = MuteScheduler.nextTrigger(now, t, 0).toLocalDate()
             val days = MuteScheduler.daysOf(this, key)
             item.findViewById<TextView>(R.id.repeat).text = repeatText(days, onceDate)
-            val percent = MuteScheduler.volumeOf(this, key)
+            // 저장된 %가 아니라 실제로 맞춰질 단계의 %를 보인다(예전에 1% 단위로 저장한 예약도 실제 값으로)
+            val level = MuteScheduler.volumeLevel(maxLevel, MuteScheduler.volumeOf(this, key))
+            val percent = MuteScheduler.levelPercent(maxLevel, level)
             item.findViewById<TextView>(R.id.volume).apply {
                 text = volumeLabel(percent)
                 val icon = if (percent == 0) R.drawable.ic_speaker_off else R.drawable.ic_speaker
@@ -416,18 +419,19 @@ class MainActivity : Activity() {
         dayBoxes.forEachIndexed { i, box -> box.isChecked = oldDays and (1 shl i) != 0 }
         enableDragSelect(daysRow, dayBoxes)
 
-        // 볼륨 % (SeekBar 0~100). 새 예약은 음소거로 시작
+        // 볼륨은 기기 단계(0~maxLevel)로만 움직이고 %로 보인다. 새 예약은 음소거로 시작
         val volume = view.findViewById<SeekBar>(R.id.volume)
         val volumeText = view.findViewById<TextView>(R.id.volume_text)
+        volume.max = maxLevel
         volume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
-                volumeText.text = volumeLabel(progress)
+                volumeText.text = volumeLabel(MuteScheduler.levelPercent(maxLevel, progress))
             }
             override fun onStartTrackingTouch(bar: SeekBar) {}
             override fun onStopTrackingTouch(bar: SeekBar) {}
         })
-        volume.progress = old?.let { MuteScheduler.volumeOf(this, it) } ?: 0
-        volumeText.text = volumeLabel(volume.progress) // 0이면 위 리스너가 안 불려서 직접 채운다
+        volume.progress = old?.let { MuteScheduler.volumeLevel(maxLevel, MuteScheduler.volumeOf(this, it)) } ?: 0
+        volumeText.text = volumeLabel(MuteScheduler.levelPercent(maxLevel, volume.progress)) // 0이면 위 리스너가 안 불려서 직접 채운다
 
         val dialog = AlertDialog.Builder(this)
             .setView(view)
@@ -447,7 +451,7 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
             val days = dayBoxes.foldIndexed(0) { i, acc, box -> if (box.isChecked) acc or (1 shl i) else acc }
-            MuteScheduler.save(this, old, key, days, volume.progress)
+            MuteScheduler.save(this, old, key, days, MuteScheduler.levelPercent(maxLevel, volume.progress))
             dialog.dismiss()
             render()
             val now = ZonedDateTime.now()
