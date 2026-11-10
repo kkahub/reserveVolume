@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 시간 휠 숫자를 직접 입력할 때의 강조 상자. 글자 폭이 아니라 칸 전체라 한 자리·두 자리 폭이 같다.
+     색은 키컬러(#D4FF3A) 40% -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <solid android:color="#66D4FF3A" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

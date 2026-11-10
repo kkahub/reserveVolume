@@ -8,7 +8,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingHorizontal="24dp"
-    android:paddingVertical="20dp">
+    android:paddingVertical="14dp">
 
     <!-- 선택(삭제) 모드에서만 보인다. 누르기는 카드 전체가 받는다 -->
     <CheckBox
@@ -21,13 +21,16 @@
         android:focusable="false"
         android:visibility="gone" />
 
-    <!-- 예약이 꺼지면 이 영역 전체를 어둡게(alpha) 한다 -->
+    <!-- 예약이 꺼지면 이 영역 전체를 어둡게(alpha) 한다.
+         아래 7dp는 숫자 위 빈 공간(폰트 기준선~대문자 높이)만큼 보정: 글자가 보이는 그대로 카드 세로 가운데에 오고,
+         스위치·체크는 카드 정가운데에 그대로 둔다 -->
     <LinearLayout
         android:id="@+id/content"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="7dp">
 
         <!-- 원UI처럼 작은 오전/오후 + 큰 시각, 글자 밑선 맞춤 -->
         <LinearLayout
@@ -45,11 +48,13 @@
                 android:textStyle="bold"
                 tools:text="오후" />
 
+            <!-- includeFontPadding=false: 폰트가 악센트 자리로 위에 남기는 여백을 없애 숫자가 카드 세로 가운데에 오게 -->
             <TextView
                 android:id="@+id/time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
                 android:textColor="@color/text_primary"
                 android:textSize="40sp"
                 tools:text="10:00" />

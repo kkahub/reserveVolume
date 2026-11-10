@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 저장 후 알림 바탕: 연회색(light_gray #D3D5D9) 25%. 밝은 토스트 대신 은은하게 비친다 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="24dp" />
+    <solid android:color="#40D3D5D9" />
+</shape>

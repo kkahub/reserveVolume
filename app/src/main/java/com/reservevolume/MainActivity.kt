@@ -2,16 +2,27 @@ package com.reservevolume
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Color
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.ViewConfiguration
+import android.view.inputmethod.InputMethodManager
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -22,11 +33,13 @@ import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
 import com.reservevolume.MuteScheduler.EVERY_DAY
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 
 /** 12시간제(오전 0/오후 1, 1~12시) → 24시간제. 오전 12시 = 0시 */
 internal fun to24h(pm: Int, hour12: Int) = hour12 % 12 + pm * 12
@@ -39,11 +52,11 @@ private val CLOCK = DateTimeFormatter.ofPattern("hh:mm")
 private const val DAYS = "일월화수목금토" // 요일 비트 순서와 같다
 private val ONCE_DATE = DateTimeFormatter.ofPattern("M월 d일 (E)", Locale.KOREAN) // 원UI처럼 11월 10일 (화)
 
-/** 목록에 보일 반복 주기: 매일 / 월 수 금 / 한 번만이면 울릴 날짜(onceDate) */
+/** 목록에 보일 반복 주기: 매일 / 한 번만이면 울릴 날짜(onceDate) / 일부 요일이면 일~토 전체(고른 요일은 repeatText가 강조) */
 internal fun repeatLabel(days: Int, onceDate: LocalDate) = when (days) {
     EVERY_DAY -> "매일"
     0 -> onceDate.format(ONCE_DATE)
-    else -> DAYS.filterIndexed { i, _ -> days and (1 shl i) != 0 }.toList().joinToString(" ")
+    else -> DAYS.toList().joinToString(" ")
 }
 
 internal fun volumeLabel(percent: Int) = if (percent == 0) "음소거" else "$percent%"
@@ -62,6 +75,23 @@ private fun AlertDialog.Builder.showMessage(): AlertDialog = show().apply {
         gravity = Gravity.CENTER_VERTICAL
         setPadding(paddingLeft, (12 * dp).toInt(), paddingRight, (12 * dp).toInt())
     }
+}
+
+/** 시 직접 입력이 끝났는지: 두 자리, 또는 뒤에 숫자가 올 수 없는 2~9 (1·0은 10~12시, 01~09시가 될 수 있어 기다린다) */
+internal fun hourInputDone(text: String) = text.length >= 2 || (text.length == 1 && text[0] in '2'..'9')
+
+/** 저장 후 알림: 24시간 이내면 "23시간 5분 후", 그 뒤면 "11월 12일 (목) 오전 08:00에". 분은 올림(30초 남아도 1분 후) */
+internal fun firstRunMessage(now: ZonedDateTime, first: ZonedDateTime): String {
+    val mins = (Duration.between(now, first).seconds + 59) / 60
+    if (mins > 24 * 60) return "${first.format(ONCE_DATE)} ${timeLabel(first.toLocalTime())}에 예약이 실행됩니다."
+    val h = mins / 60
+    val m = mins % 60
+    val left = when {
+        h == 0L -> "${m}분"
+        m == 0L -> "${h}시간"
+        else -> "${h}시간 ${m}분"
+    }
+    return "$left 후 예약이 실행됩니다."
 }
 
 /** "22:00" → "오후 10:00" */
@@ -104,7 +134,26 @@ class MainActivity : Activity() {
         super.onResume()
         MuteScheduler.apply(this)
         render()
+        registerReceiver(clock, IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_TICK)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        })
         guideSettings()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(clock)
+    }
+
+    // 화면을 켜 둔 동안 매분(시계·시간대가 바뀔 때도) 다시 그려 "한 번" 날짜와 울리고 꺼진 상태를 맞춘다.
+    // 시계가 바뀌면 이미 걸린 알람 시각도 어긋나서 다시 건다
+    private val clock = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, intent: Intent) {
+            if (intent.action != Intent.ACTION_TIME_TICK) MuteScheduler.apply(c)
+            render()
+        }
     }
 
     private var guide: AlertDialog? = null
@@ -161,8 +210,10 @@ class MainActivity : Activity() {
             item.findViewById<TextView>(R.id.ampm).text = t.format(AMPM)
             item.findViewById<TextView>(R.id.time).text = t.format(CLOCK)
             // 한 번만 예약은 다음에 울릴 날짜. 꺼져 있으면 다시 켰을 때 울릴 날짜(알람 계산과 같은 규칙)
+            // 꺼져 있어도 지금 기준으로 계산하니, 다시 켜면 울릴 날짜가 그대로 보인다(지났으면 내일, 아니면 오늘)
             val onceDate = MuteScheduler.nextTrigger(ZonedDateTime.now(), t, 0).toLocalDate()
-            item.findViewById<TextView>(R.id.repeat).text = repeatLabel(MuteScheduler.daysOf(this, key), onceDate)
+            val days = MuteScheduler.daysOf(this, key)
+            item.findViewById<TextView>(R.id.repeat).text = repeatText(days, onceDate)
             val percent = MuteScheduler.volumeOf(this, key)
             item.findViewById<TextView>(R.id.volume).apply {
                 text = volumeLabel(percent)
@@ -179,6 +230,8 @@ class MainActivity : Activity() {
                     showEnabled(on)
                     prefs.edit().putBoolean(key, on).apply()
                     MuteScheduler.apply(this@MainActivity)
+                    val now = ZonedDateTime.now()
+                    notify3s(if (on) firstRunMessage(now, MuteScheduler.nextTrigger(now, t, days)) else "${timeLabel(t)} 예약이 꺼졌습니다.")
                 }
             }
             item.findViewById<CheckBox>(R.id.check).apply {
@@ -199,6 +252,46 @@ class MainActivity : Activity() {
                 true
             }
             list.addView(item)
+        }
+    }
+
+    private val hideNotice = Runnable {
+        findViewById<View>(R.id.notice).animate().alpha(0f).withEndAction { findViewById<View>(R.id.notice).visibility = View.GONE }
+    }
+
+    /** 화면 아래 알림을 3초 보여준다. 시스템 토스트는 Android 11+에서 색·위치를 못 바꿔 앱 안 알림으로 띄운다 */
+    private fun notify3s(text: String) {
+        val notice = findViewById<TextView>(R.id.notice)
+        notice.removeCallbacks(hideNotice)
+        notice.animate().cancel()
+        notice.text = text
+        notice.alpha = 0f
+        notice.visibility = View.VISIBLE
+        notice.animate().alpha(1f)
+        notice.postDelayed(hideNotice, 3000)
+    }
+
+    /**
+     * NumberPicker는 0.1초보다 짧은 탭(또는 0.5초 길게 누름)에만 입력을 연다. 손가락으로 보통 누르는 탭도
+     * 가운데 칸 안이고 거의 안 움직였으면 입력을 연다. 휠 스크롤·위아래 탭은 NumberPicker가 그대로 처리
+     */
+    private fun openInputOnTap(picker: NumberPicker, input: EditText) {
+        val slop = ViewConfiguration.get(this).scaledTouchSlop
+        var downX = 0f
+        var downY = 0f
+        picker.setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y }
+                MotionEvent.ACTION_UP ->
+                    if (abs(e.x - downX) < slop && abs(e.y - downY) < slop && downY >= input.top && downY <= input.bottom) {
+                        picker.post { // NumberPicker가 손 뗀 처리를 끝낸 뒤에 연다
+                            input.visibility = View.VISIBLE
+                            input.requestFocus()
+                            getSystemService(InputMethodManager::class.java).showSoftInput(input, 0)
+                        }
+                    }
+            }
+            false
         }
     }
 
@@ -228,6 +321,18 @@ class MainActivity : Activity() {
             dragging // 드래그 중엔 이벤트를 먹어서 CheckBox의 탭 토글이 끼지 않게
         }
         boxes.forEach { it.setOnTouchListener(listener) }
+    }
+
+    /** 원UI처럼 일~토를 모두 쓰고 고른 요일만 키컬러·굵게. "일 월 화 …"라 i번째 요일은 i*2 위치 */
+    private fun repeatText(days: Int, onceDate: LocalDate): CharSequence {
+        val label = repeatLabel(days, onceDate)
+        if (days == 0 || days == EVERY_DAY) return label
+        return SpannableString(label).apply {
+            for (i in 0 until 7) if (days and (1 shl i) != 0) {
+                setSpan(ForegroundColorSpan(getColor(R.color.key)), i * 2, i * 2 + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(StyleSpan(Typeface.BOLD), i * 2, i * 2 + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
     }
 
     /** 삭제 전 확인: 1개는 그 시각, 전부면 "전체", 그 외엔 개수로 묻는다. 시각·"전체"·"N개"는 키컬러로 강조 */
@@ -267,10 +372,26 @@ class MainActivity : Activity() {
         minute.maxValue = 59
         minute.setFormatter { "%02d".format(it) }
         // 키보드 "다음"으로 분 입력칸으로. 기본 다음 포커스는 분 NumberPicker 자체라 입력이 안 된다
-        val minuteInput = minute.getChildAt(0)
-        (hour.getChildAt(0) as EditText).apply {
+        val minuteInput = minute.getChildAt(0) as EditText
+        val hourInput = hour.getChildAt(0) as EditText
+        // 직접 입력 중 표시를 글자 선택 영역 대신 칸 전체 상자로: 한 자리 시도 두 자리 분과 같은 폭
+        for (input in listOf(hourInput, minuteInput)) {
+            input.setBackgroundResource(R.drawable.bg_picker_input)
+            input.highlightColor = Color.TRANSPARENT
+        }
+        openInputOnTap(hour, hourInput)
+        openInputOnTap(minute, minuteInput)
+        hourInput.apply {
             imeOptions = EditorInfo.IME_ACTION_NEXT
             setOnEditorActionListener { _, _, _ -> minuteInput.requestFocus() }
+            // 시를 다 치면 분 입력칸으로. 휠을 넘겨 바뀌는 글자는 입력칸에 포커스가 없어 무시된다
+            addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable) {
+                    if (hasFocus() && hourInputDone(s.toString())) minuteInput.requestFocus()
+                }
+                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+            })
         }
 
         val t = old?.let(LocalTime::parse) ?: LocalTime.now() // 새 예약은 휴대폰 현재 시각으로 시작
@@ -319,6 +440,8 @@ class MainActivity : Activity() {
             MuteScheduler.save(this, old, key, days, volume.progress)
             dialog.dismiss()
             render()
+            val now = ZonedDateTime.now()
+            notify3s(firstRunMessage(now, MuteScheduler.nextTrigger(now, time, days)))
         }
     }
 }

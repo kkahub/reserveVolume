@@ -135,4 +135,21 @@
             style="@style/FloatingPillText"
             android:text="삭제" />
     </LinearLayout>
+
+    <!-- 저장 후 3초 알림(토스트 대신). 예약 등록 버튼 위에 뜬다. liveRegion으로 화면 낭독기도 읽는다 -->
+    <TextView
+        android:id="@+id/notice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="100dp"
+        android:accessibilityLiveRegion="polite"
+        android:background="@drawable/bg_notice"
+        android:gravity="center"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="12dp"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:visibility="gone" />
 </FrameLayout>
