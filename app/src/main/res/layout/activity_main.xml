@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 헤더 + 스크롤 컨테이너, 그 위에 예약 등록 버튼이 떠 있다 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<!-- 헤더 + 스크롤 컨테이너, 그 위에 예약 등록 버튼이 떠 있다.
+     바깥은 merge: 액티비티가 이미 FrameLayout(content)으로 감싸므로 한 단계를 겹쳐 두지 않는다 -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -152,4 +151,4 @@
         android:textColor="@color/text_primary"
         android:textSize="15sp"
         android:visibility="gone" />
-</FrameLayout>
+</merge>

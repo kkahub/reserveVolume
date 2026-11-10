@@ -13,19 +13,19 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.text.Editable
-import android.text.TextWatcher
+import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.Spanned
-import android.text.SpannableString
+import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.MotionEvent
-import android.view.ViewConfiguration
-import android.view.inputmethod.InputMethodManager
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.NumberPicker
@@ -49,14 +49,18 @@ internal fun to12h(hour24: Int) = (hour24 + 11) % 12 + 1
 private val AMPM = DateTimeFormatter.ofPattern("a", Locale.KOREAN)
 private val CLOCK = DateTimeFormatter.ofPattern("hh:mm")
 
-private const val DAYS = "일월화수목금토" // 요일 비트 순서와 같다
+private const val WEEK = "일 월 화 수 목 금 토" // 요일 비트 순서(bit0=일). i번째 요일 글자는 i*2 위치
 private val ONCE_DATE = DateTimeFormatter.ofPattern("M월 d일 (E)", Locale.KOREAN) // 원UI처럼 11월 10일 (화)
 
 /** 목록에 보일 반복 주기: 매일 / 한 번만이면 울릴 날짜(onceDate) / 일부 요일이면 일~토 전체(고른 요일은 repeatText가 강조) */
 internal fun repeatLabel(days: Int, onceDate: LocalDate) = when (days) {
     EVERY_DAY -> "매일"
     0 -> onceDate.format(ONCE_DATE)
-    else -> DAYS.toList().joinToString(" ")
+    else -> WEEK
+}
+
+private fun View.visibleIf(on: Boolean) {
+    visibility = if (on) View.VISIBLE else View.GONE
 }
 
 internal fun volumeLabel(percent: Int) = if (percent == 0) "음소거" else "$percent%"
@@ -117,8 +121,9 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.delete).setOnClickListener { confirmDelete() }
     }
 
-    // 선택 모드에선 뒤로가기로 선택 모드만 빠져나온다
-    @Suppress("OVERRIDE_DEPRECATION")
+    // 선택 모드에선 뒤로가기로 선택 모드만 빠져나온다.
+    // 새 뒤로가기 API(OnBackInvokedCallback)는 Android 13+ 전용이라 minSdk 26에선 이걸 쓴다
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onBackPressed() {
         if (selection == null) super.onBackPressed() else exitSelection()
     }
@@ -192,26 +197,27 @@ class MainActivity : Activity() {
         val list = findViewById<ViewGroup>(R.id.list)
         list.removeAllViews()
         val keys = prefs.all.keys.sorted() // "HH:mm"이라 문자열 정렬이 곧 시간순
-        findViewById<View>(R.id.empty).visibility = if (keys.isEmpty()) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.empty).visibleIf(keys.isEmpty())
 
         val sel = selection
         findViewById<View>(R.id.title).visibility = if (sel == null) View.VISIBLE else View.INVISIBLE // 자리는 유지
-        findViewById<View>(R.id.selection_bar).visibility = if (sel == null) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.add).visibility = if (sel == null) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.delete).visibility = if (sel == null) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.selection_bar).visibleIf(sel != null)
+        findViewById<View>(R.id.add).visibleIf(sel == null)
+        findViewById<View>(R.id.delete).visibleIf(sel != null)
         if (sel != null) {
             findViewById<CheckBox>(R.id.select_all).isChecked = sel.size == keys.size
             findViewById<View>(R.id.delete).isEnabled = sel.isNotEmpty() // 비활성 색은 bg_light_button이 바꾼다
         }
 
+        val now = ZonedDateTime.now() // 모든 카드를 같은 순간 기준으로
         for (key in keys) {
             val item = layoutInflater.inflate(R.layout.item_reservation, list, false)
             val t = LocalTime.parse(key)
             item.findViewById<TextView>(R.id.ampm).text = t.format(AMPM)
             item.findViewById<TextView>(R.id.time).text = t.format(CLOCK)
-            // 한 번만 예약은 다음에 울릴 날짜. 꺼져 있으면 다시 켰을 때 울릴 날짜(알람 계산과 같은 규칙)
-            // 꺼져 있어도 지금 기준으로 계산하니, 다시 켜면 울릴 날짜가 그대로 보인다(지났으면 내일, 아니면 오늘)
-            val onceDate = MuteScheduler.nextTrigger(ZonedDateTime.now(), t, 0).toLocalDate()
+            // 한 번만 예약은 다음에 울릴 날짜. 꺼져 있어도 지금 기준으로 계산하니,
+            // 다시 켜면 울릴 날짜가 그대로 보인다(지났으면 내일, 아니면 오늘. 알람 계산과 같은 규칙)
+            val onceDate = MuteScheduler.nextTrigger(now, t, 0).toLocalDate()
             val days = MuteScheduler.daysOf(this, key)
             item.findViewById<TextView>(R.id.repeat).text = repeatText(days, onceDate)
             val percent = MuteScheduler.volumeOf(this, key)
@@ -225,17 +231,20 @@ class MainActivity : Activity() {
             item.findViewById<Switch>(R.id.enabled).apply {
                 isChecked = prefs.getBoolean(key, false)
                 showEnabled(isChecked)
-                visibility = if (sel == null) View.VISIBLE else View.GONE
+                visibleIf(sel == null)
                 setOnCheckedChangeListener { _, on ->
                     showEnabled(on)
                     prefs.edit().putBoolean(key, on).apply()
                     MuteScheduler.apply(this@MainActivity)
-                    val now = ZonedDateTime.now()
-                    notify3s(if (on) firstRunMessage(now, MuteScheduler.nextTrigger(now, t, days)) else "${timeLabel(t)} 예약이 꺼졌습니다.")
+                    val toggledAt = ZonedDateTime.now()
+                    notify3s(
+                        if (on) firstRunMessage(toggledAt, MuteScheduler.nextTrigger(toggledAt, t, days))
+                        else "${timeLabel(t)} 예약이 꺼졌습니다."
+                    )
                 }
             }
             item.findViewById<CheckBox>(R.id.check).apply {
-                visibility = if (sel == null) View.GONE else View.VISIBLE
+                visibleIf(sel != null)
                 isChecked = sel?.contains(key) == true
             }
             item.setOnClickListener {
@@ -371,9 +380,9 @@ class MainActivity : Activity() {
         hour.maxValue = 12
         minute.maxValue = 59
         minute.setFormatter { "%02d".format(it) }
-        // 키보드 "다음"으로 분 입력칸으로. 기본 다음 포커스는 분 NumberPicker 자체라 입력이 안 된다
-        val minuteInput = minute.getChildAt(0) as EditText
+        // NumberPicker 안쪽 숫자 입력칸
         val hourInput = hour.getChildAt(0) as EditText
+        val minuteInput = minute.getChildAt(0) as EditText
         // 직접 입력 중 표시를 글자 선택 영역 대신 칸 전체 상자로: 한 자리 시도 두 자리 분과 같은 폭
         for (input in listOf(hourInput, minuteInput)) {
             input.setBackgroundResource(R.drawable.bg_picker_input)
@@ -382,6 +391,7 @@ class MainActivity : Activity() {
         openInputOnTap(hour, hourInput)
         openInputOnTap(minute, minuteInput)
         hourInput.apply {
+            // 키보드 "다음"으로 분 입력칸으로. 기본 다음 포커스는 분 NumberPicker 자체라 입력이 안 된다
             imeOptions = EditorInfo.IME_ACTION_NEXT
             setOnEditorActionListener { _, _, _ -> minuteInput.requestFocus() }
             // 시를 다 치면 분 입력칸으로. 휠을 넘겨 바뀌는 글자는 입력칸에 포커스가 없어 무시된다
