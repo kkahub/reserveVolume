@@ -1,5 +1,8 @@
 package com.reservevolume
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
@@ -24,6 +27,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.CheckBox
@@ -412,6 +416,61 @@ class MainActivity : Activity() {
         hour.value = to12h(t.hour)
         minute.value = t.minute
 
+        // 휠로 시를 11↔12로 넘기면 오전/오후도 굴려서 넘긴다. pm은 맞춰야 할 오전/오후(저장도 이 값으로)
+        var pm = ampm.value
+        var anim: ValueAnimator? = null
+        // NumberPicker 자체 굴리기는 300ms 고정이고, 두 칸짜리 휠은 끝 값에 닿자마자 제자리로 튕겨 끝까지 안 굴러간다.
+        // 그래서 굴리는 동안만 위아래에 빈 칸을 붙여(빈칸·오전·오후·빈칸) 휠을 직접 한 칸 굴리고 되돌린다
+        fun roll() {
+            if (anim != null || ampm.value == pm) return
+            val names = ampm.displayedValues
+            val textSize = (ampm.getChildAt(0) as EditText).textSize.toInt()
+            val step = textSize + ((ampm.height - 3 * textSize) / 3f + 0.5f).toInt() // NumberPicker의 한 칸 높이 계산과 같다
+            ampm.displayedValues = arrayOf("") + names + ""
+            ampm.maxValue = 3
+            ampm.value += 1
+            ampm.getChildAt(0).visibility = View.INVISIBLE // 가운데 글자도 휠이 그려야 같이 굴러간다
+            var moved = 0
+            val a = ValueAnimator.ofInt(0, if (pm == 1) -step else step)
+            a.duration = 500 // NumberPicker 기본(300ms)보다 0.2초 느리게
+            a.interpolator = DecelerateInterpolator()
+            a.addUpdateListener {
+                val y = it.animatedValue as Int
+                ampm.scrollBy(0, y - moved)
+                moved = y
+                ampm.invalidate()
+            }
+            a.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { // 취소돼도 불린다
+                    anim = null
+                    val v = ampm.value - 1
+                    ampm.maxValue = 1
+                    ampm.displayedValues = names
+                    ampm.value = v
+                    ampm.scrollBy(0, if (v == 1) -1 else 1) // 끝 값에서 바깥쪽으로 밀면 NumberPicker가 휠을 제자리에 딱 맞춘다
+                    ampm.invalidate()
+                    ampm.post { roll() } // 굴리는 사이 시가 다시 넘어갔으면 되돌린다
+                }
+            })
+            anim = a
+            a.start()
+        }
+        ampm.setOnValueChangedListener { _, _, new -> if (anim == null) pm = new } // 오전/오후를 직접 넘김
+        // 굴리는 중에 손대면 굴리기를 멈추고 그때 값을 기준으로 삼는다
+        ampm.setOnTouchListener { _, e ->
+            if (e.actionMasked == MotionEvent.ACTION_DOWN) { anim?.cancel(); pm = ampm.value }
+            false
+        }
+        hour.setOnValueChangedListener { _, from, to ->
+            // 휠을 건드리면 NumberPicker가 입력칸을 숨긴다. 입력칸이 보이는 중의 변경(직접 입력)은 적은 그대로 둔다
+            if (hourInput.visibility != View.VISIBLE && setOf(from, to) == setOf(11, 12)) {
+                pm = 1 - pm
+                // 이 시 휠은 글자에 비해 칸 간격이 좁아 스크롤 한 번 처리 안에서 11→12→11처럼 왕복하기도 한다.
+                // 그래서 넘을 때마다 목표만 뒤집고, 처리가 끝난 뒤에 한 번 맞춘다
+                ampm.post { roll() }
+            }
+        }
+
         // 일~토 토글. 새 예약은 미선택(한 번만)으로 시작
         val daysRow = view.findViewById<ViewGroup>(R.id.days)
         val dayBoxes = (0 until 7).map { daysRow.getChildAt(it) as CheckBox }
@@ -432,6 +491,8 @@ class MainActivity : Activity() {
         })
         volume.progress = old?.let { MuteScheduler.volumeLevel(maxLevel, MuteScheduler.volumeOf(this, it)) } ?: 0
         volumeText.text = volumeLabel(MuteScheduler.levelPercent(maxLevel, volume.progress)) // 0이면 위 리스너가 안 불려서 직접 채운다
+        val fade = view.findViewById<CheckBox>(R.id.fade)
+        fade.isChecked = old?.let { MuteScheduler.fadeOf(this, it) } ?: false
 
         val dialog = AlertDialog.Builder(this)
             .setView(view)
@@ -441,7 +502,7 @@ class MainActivity : Activity() {
         // 중복일 때 창을 닫지 않으려고 저장 클릭을 직접 처리한다
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             view.requestFocus() // 입력 중인 칸의 포커스를 빼야 NumberPicker가 값을 확정한다
-            val time = LocalTime.of(to24h(ampm.value, hour.value), minute.value)
+            val time = LocalTime.of(to24h(pm, hour.value), minute.value)
             val key = time.toString()
             if (key != old && prefs.contains(key)) {
                 AlertDialog.Builder(this)
@@ -451,7 +512,7 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
             val days = dayBoxes.foldIndexed(0) { i, acc, box -> if (box.isChecked) acc or (1 shl i) else acc }
-            MuteScheduler.save(this, old, key, days, MuteScheduler.levelPercent(maxLevel, volume.progress))
+            MuteScheduler.save(this, old, key, days, MuteScheduler.levelPercent(maxLevel, volume.progress), fade.isChecked)
             dialog.dismiss()
             render()
             val now = ZonedDateTime.now()

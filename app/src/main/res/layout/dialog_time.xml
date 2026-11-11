@@ -78,7 +78,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="음악 볼륨"
+            android:text="볼륨 설정"
             android:textColor="@color/text_secondary"
             android:textSize="15sp" />
 
@@ -110,4 +110,16 @@
         android:progressDrawable="@drawable/seekbar_track"
         android:splitTrack="false"
         android:thumb="@drawable/seekbar_thumb" />
+
+    <!-- 켜면 예약 볼륨으로 바로 가지 않고 한 단계씩 다가간다(8단계 이상이면 0.05초, 아니면 0.1초 간격) -->
+    <CheckBox
+        android:id="@+id/fade"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="6dp"
+        android:text="페이드"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 </LinearLayout>

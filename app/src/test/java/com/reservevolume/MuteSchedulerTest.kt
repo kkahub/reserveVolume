@@ -44,6 +44,12 @@ class MuteSchedulerTest {
             assertEquals(level, MuteScheduler.volumeLevel(max, MuteScheduler.levelPercent(max, level)))
     }
 
+    @Test fun fadeStepsOneLevelAtATime() {
+        assertEquals(listOf(14, 13, 12), MuteScheduler.fadeLevels(15, 12)) // 100 → 93 → 87 → 80%
+        assertEquals(listOf(4, 5, 6), MuteScheduler.fadeLevels(3, 6))
+        assertEquals(emptyList<Int>(), MuteScheduler.fadeLevels(7, 7)) // 이미 같으면 그대로
+    }
+
     @Test fun onceIgnoresWeekday() =
         assertEquals(at(22, 0, day = 10), MuteScheduler.nextTrigger(at(23, 0, day = 9), LocalTime.of(22, 0), 0))
 }

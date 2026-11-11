@@ -28,6 +28,14 @@ object MuteScheduler {
 
     fun volumeOf(c: Context, key: String) = volumePrefs(c).getInt(key, 0) // 볼륨 기능 전 예약은 음소거
 
+    /** 페이드 여부. 키 "HH:mm" → true면 예약 볼륨으로 바로 가지 않고 한 단계씩 다가간다(8단계 이상이면 0.05초, 아니면 0.1초 간격) */
+    private fun fadePrefs(c: Context) = c.getSharedPreferences("fade", Context.MODE_PRIVATE)
+
+    fun fadeOf(c: Context, key: String) = fadePrefs(c).getBoolean(key, false)
+
+    /** 페이드로 거쳐 갈 볼륨 단계(from 빼고 to까지). 15 → 12면 14, 13, 12 */
+    fun fadeLevels(from: Int, to: Int) = if (to >= from) (from + 1..to).toList() else (from - 1 downTo to).toList()
+
     /** 볼륨 %를 기기 볼륨 단계로 반올림. 최대 15단계면 60% → 9 */
     fun volumeLevel(max: Int, percent: Int) = (max * percent + 50) / 100
 
@@ -42,15 +50,17 @@ object MuteScheduler {
         prefs(c).edit().remove(key).apply()
         repeatPrefs(c).edit().remove(key).apply()
         volumePrefs(c).edit().remove(key).apply()
+        fadePrefs(c).edit().remove(key).apply()
         c.getSystemService(AlarmManager::class.java).cancel(pending(c, key))
     }
 
     /** 예약을 등록하거나 old를 고친다. 등록·수정하면 바로 켠다. */
-    fun save(c: Context, old: String?, key: String, days: Int, volume: Int) {
+    fun save(c: Context, old: String?, key: String, days: Int, volume: Int, fade: Boolean) {
         if (old != null) delete(c, old)
         prefs(c).edit().putBoolean(key, true).apply()
         repeatPrefs(c).edit().putInt(key, days).apply()
         volumePrefs(c).edit().putInt(key, volume).apply()
+        fadePrefs(c).edit().putBoolean(key, fade).apply()
         apply(c)
     }
 

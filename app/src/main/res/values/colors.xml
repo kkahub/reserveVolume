@@ -7,6 +7,8 @@
     <color name="light_gray">#D3D5D9</color>
     <color name="text_primary">#E8E9EB</color>
     <color name="text_secondary">#8E9298</color>
+    <!-- 목록의 시계·스피커 아이콘 -->
+    <color name="icon">#888888</color>
     <!-- 키컬러: 핵심 요소(등록 버튼, 켜진 스위치, 앱 아이콘)에만 사용 -->
     <color name="key">#D4FF3A</color>
     <color name="on_key">#1C1D20</color>
